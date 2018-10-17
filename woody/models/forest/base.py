@@ -13,7 +13,7 @@ sys.path.append("../../../futhark",
                 "../../futhark",
                 "../futhark")
 
-from treesolver import treesolver
+from treesolver_python import treesolve
 
 from .util import PickableWoodyRFWrapper, ensure_data_types
 from woody.util.array import transpose_array
@@ -91,7 +91,6 @@ class Wood(object):
         self.lam_criterion = lam_criterion
         self.n_jobs = n_jobs
         self.verbose = verbose
-        self.futhark_object = treesolver()
 
         # set numpy float and int dtypes
         if self.float_type == "float":
@@ -249,30 +248,32 @@ class Wood(object):
                 indices = indices.reshape((1, len(indices)))
 
         preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+        preds_fut = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
 
         self.wrapper.module.predict_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
+        preds_fut = treesolve(X, preds_fut, indices, self.wrapper.params, self.wrapper.forest, preds)
 
         return preds
 
-    def predict_futhark(self, X, indices=None):
-        """
-        """
-
-        if X.dtype != self.numpy_dtype_float:
-            X = X.astype(self.numpy_dtype_float)
-
-        if indices is None:
-            indices = np.empty((0, 0), dtype=np.int32)
-        else:
-            indices = np.array(indices).astype(dtype=np.int32)
-            if indices.ndim == 1:
-                indices = indices.reshape((1, len(indices)))
-
-        preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
-
-        output = self.futhark_object.main(X, preds, indices, self.wrapper.params, self.wrapper.forest)
-
-        return preds
+    # def predict_futhark(self, X, indices=None):
+    #     """
+    #     """
+    #
+    #     if X.dtype != self.numpy_dtype_float:
+    #         X = X.astype(self.numpy_dtype_float)
+    #
+    #     if indices is None:
+    #         indices = np.empty((0, 0), dtype=np.int32)
+    #     else:
+    #         indices = np.array(indices).astype(dtype=np.int32)
+    #         if indices.ndim == 1:
+    #             indices = indices.reshape((1, len(indices)))
+    #
+    #     preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+    #
+    #     output = self.futhark_object.main(X, preds, indices, self.wrapper.params, self.wrapper.forest)
+    #
+    #     return preds
 
     def predict_all(self, X, indices=None):
         """

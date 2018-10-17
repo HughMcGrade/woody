@@ -11,9 +11,9 @@ import json
 from woody import WoodClassifier
 from woody.util import ensure_dir_for_file
 from woody.data import *
-            
-def single_run(dkey, train_size, param, seed, profile=False):     
-           
+
+def single_run(dkey, train_size, param, seed, profile=False):
+
     print("Processing data set %s with train_size %s, seed %s, and parameters %s ..." % (str(dkey), str(train_size), str(seed), str(param)))
 
     if dkey == "covtype":
@@ -24,12 +24,12 @@ def single_run(dkey, train_size, param, seed, profile=False):
         Xtrain, ytrain, Xtest, ytest = susy(train_size=train_size, seed=seed)
     else:
         raise Exception("Unknown data set!")
-    
+
     print("")
     print("Number of training patterns:\t%i" % Xtrain.shape[0])
     print("Number of test patterns:\t%i" % Xtest.shape[0])
     print("Dimensionality of the data:\t%i\n" % Xtrain.shape[1])
-        
+
     model = WoodClassifier(
                 n_estimators=param['n_estimators'],
                 criterion="gini",
@@ -44,25 +44,25 @@ def single_run(dkey, train_size, param, seed, profile=False):
                 float_type="double",
                 max_depth=None,
                 verbose=0)
-    
+
     if profile == True:
         import yep
         assert param['n_jobs'] == 1
         yep.start("train.prof")
-                    
+
     # training
     fit_start_time = time.time()
     model.fit(Xtrain, ytrain)
     fit_end_time = time.time()
     if profile == True:
-        yep.stop()             
-    ypreds_train = model.predict(Xtrain) 
-     
+        yep.stop()
+    ypreds_train = model.predict(Xtrain)
+
     # testing
     test_start_time = time.time()
     ypred_test = model.predict(Xtest)
     test_end_time = time.time()
-    
+
     results = {}
     results['dataset'] = dkey
     results['param'] = param
@@ -70,10 +70,10 @@ def single_run(dkey, train_size, param, seed, profile=False):
     results['testing_time'] = test_end_time - test_start_time
     print("Training time:     %f" % results['training_time'])
     print("Testing time:      %f" % results['testing_time'])
-                
+
     evaluate(ypreds_train, ytrain, results, "training")
     evaluate(ypred_test, ytest, results, "testing")
-                    
+
     fname = '%s_%s_%s_%s_%s_%s.json' % (str(param['n_estimators']),
                                   str(param['max_features']),
                                   str(param['n_jobs']),
@@ -85,7 +85,7 @@ def single_run(dkey, train_size, param, seed, profile=False):
     ensure_dir_for_file(fname)
     with open(fname, 'w') as fp:
         json.dump(results, fp)
-            
+
 ###################################################################################
 import argparse
 parser = argparse.ArgumentParser()
@@ -97,5 +97,4 @@ args = parser.parse_args()
 dkey, train_size, seed, key = args.dkey, args.train_size, args.seed, args.key
 ###################################################################################
 
-single_run(dkey, train_size, params.parameters[key], seed)            
-            
+single_run(dkey, train_size, params.parameters[key], seed)
