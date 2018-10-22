@@ -243,8 +243,10 @@ class Wood(object):
                 indices = indices.reshape((1, len(indices)))
 
         preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+        preds_fut = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
 
         self.wrapper.module.predict_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
+        treesolve(X, preds_fut, indices, self.wrapper.params, self.wrapper.forest, preds)
 
         return preds
 
