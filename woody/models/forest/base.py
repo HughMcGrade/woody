@@ -8,7 +8,7 @@ import abc
 import math
 import numpy as np
 import cPickle as pickle
-#import treesolver_python
+from .treesolver_python import treesolve
 
 from .util import PickableWoodyRFWrapper, ensure_data_types
 from woody.util.array import transpose_array
