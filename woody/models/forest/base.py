@@ -8,13 +8,13 @@ import abc
 import math
 import numpy as np
 import cPickle as pickle
-# from .treesolver_python import treesolve
 
 from .util import PickableWoodyRFWrapper, ensure_data_types
 from woody.util.array import transpose_array
 from woody.util import draw_single_tree
 
 class Wood(object):
+    from .treesolver_python import treesolve
     """
     Random forest implementation.
     """
