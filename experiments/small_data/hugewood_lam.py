@@ -1,5 +1,5 @@
-import sys
-sys.path.append(".")
+# import sys
+# sys.path.append(".")
 
 import os
 import json
@@ -15,9 +15,9 @@ from woody.util import ensure_dir_for_file
 from woody.data import *
 
 def single_run(dkey, train_size, param, seed, profile=False):
-                
+
     print("Processing data set %s with train_size %s, seed %s, and parameters %s ..." % (str(dkey), str(train_size), str(seed), str(param)))
-    
+
     if dkey == "covtype":
         traingen, testgen = covtype_generators(train_size=train_size, store="mem", seed=seed)
     elif dkey == "higgs":
@@ -26,14 +26,14 @@ def single_run(dkey, train_size, param, seed, profile=False):
         traingen, testgen = susy_generators(train_size=train_size, store="mem", seed=seed)
     else:
         raise Exception("Unknown data set!")
-    
+
     print("")
     print("Number of training patterns:\t%i" % traingen.get_shapes()[0][0])
     print("Number of test patterns:\t%i" % testgen.get_shapes()[0][0])
     print("Dimensionality of the data:\t%i\n" % traingen.get_shapes()[0][1])
-    
+
     param_wood = param['param_wood']
-    
+
     wood = WoodClassifier(
                 n_estimators=1,
                 criterion="gini",
@@ -63,29 +63,29 @@ def single_run(dkey, train_size, param, seed, profile=False):
                seed=seed,
                verbose=1,
                plot_intermediate={},
-               chunk_max_megabytes=2048, 
+               chunk_max_megabytes=2048,
                wrapped_instance=wood,
-               store=MemoryStore(),                       
+               store=MemoryStore(),
                )
-    
+
     # training
     if profile == True:
         import yep
         assert param_wood['n_jobs'] == 1
         yep.start("train.prof")
-                
-    fit_start_time = time.time()        
+
+    fit_start_time = time.time()
     model.fit(traingen)
     fit_end_time = time.time()
     if profile == True:
         yep.stop()
     ypreds_train = model.predict(generator=traingen)
-    
+
     # testing
     test_start_time = time.time()
     ypred_test = model.predict(generator=testgen)
     test_end_time = time.time()
-    
+
     results = {}
     results['dataset'] = dkey
     results['param'] = param
@@ -93,10 +93,10 @@ def single_run(dkey, train_size, param, seed, profile=False):
     results['testing_time'] = test_end_time - test_start_time
     print("Training time:\t\t%f" % results['training_time'])
     print("Testing time:\t\t%f" % results['testing_time'])
-                
+
     evaluate(ypreds_train, traingen.get_all_target(), results, "training")
     evaluate(ypred_test, testgen.get_all_target(), results, "testing")
-        
+
     fname = '%s_%s_%s_%s_%s_%s.json' % (str(param_wood['n_estimators']),
                                   str(param_wood['max_features']),
                                   str(param_wood['n_jobs']),
@@ -108,11 +108,11 @@ def single_run(dkey, train_size, param, seed, profile=False):
     ensure_dir_for_file(fname)
     with open(fname, 'w') as fp:
         json.dump(results, fp)
-    
+
     del(testgen)
     del(traingen)
     model.cleanup()
-    
+
     time.sleep(1)
 
 ###################################################################################
