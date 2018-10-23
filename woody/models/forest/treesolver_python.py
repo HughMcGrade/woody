@@ -1,8 +1,8 @@
 # self.wrapper.module.predict_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
 # preds_fut = treesolve(X, preds_fut, indices, self.wrapper.params, self.wrapper.forest, preds)
-# from treesolver import treesolver
-#
-# solver = treesolver()
+from treesolver import treesolver
+
+solver = treesolver()
 
 def treesolve(X, preds_fut, indices, params, forest, preds):
     print(X)
