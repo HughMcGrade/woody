@@ -8,7 +8,7 @@ import params
 
 import time
 
-from woody import HugeWoodClassifier, WoodClassifier
+from woody.models import HugeWoodClassifier, WoodClassifier
 
 from woody.io import  MemoryStore, DiskStore
 from woody.util import ensure_dir_for_file
