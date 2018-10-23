@@ -14,7 +14,6 @@ from woody.util.array import transpose_array
 from woody.util import draw_single_tree
 
 class Wood(object):
-    # from .treesolver_python import treesolve
     """
     Random forest implementation.
     """
@@ -136,6 +135,7 @@ class Wood(object):
             self.setattr(parameter, value)
 
     def fit(self, X, y, indices=None):
+        from .treesolver_python import treesolve
         """ If indices is not None, then
         consider X[indices] instead of X
         (in-place).
