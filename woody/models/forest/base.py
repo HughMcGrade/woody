@@ -13,6 +13,19 @@ from .util import PickableWoodyRFWrapper, ensure_data_types
 from woody.util.array import transpose_array
 from woody.util import draw_single_tree
 
+def print_a_tree(X, preds_fut, indices, params, forest, preds):
+#    print("Saving tree to csv")
+#    np.savetxt("X.csv", X, delimiter=',')
+    print(X)
+    print(preds_fut)
+    print(indices)
+    print(params)
+    print("Printing forest object")
+    print(forest)
+    print("Done printing forest object")
+#    np.savetxt("forest.csv", forest[0], delimiter=',')    
+    print(preds)
+
 class Wood(object):
     """
     Random forest implementation.
@@ -135,7 +148,7 @@ class Wood(object):
             self.setattr(parameter, value)
 
     def fit(self, X, y, indices=None):
-        from .treesolver_python import treesolve
+#        from .treesolver_python import treesolve
         """ If indices is not None, then
         consider X[indices] instead of X
         (in-place).
@@ -246,8 +259,6 @@ class Wood(object):
         preds_fut = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
 
         self.wrapper.module.predict_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
-        treesolve(X, preds_fut, indices, self.wrapper.params, self.wrapper.forest, preds)
-
         return preds
 
     def predict_all(self, X, indices=None):
@@ -267,7 +278,7 @@ class Wood(object):
         preds = np.ones((X.shape[0], self.n_estimators), dtype=self.numpy_dtype_float)
 
         self.wrapper.module.predict_all_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
-
+        print_a_tree(X, preds, indices, self.wrapper.params, self.wrapper.forest, preds)
         return preds
 
     def get_leaves_ids(self, X, n_jobs=1, indices=None, verbose=0):
