@@ -11,9 +11,9 @@ import h5py
 import pandas
 
 def check_and_download(fname, remoteurl="REMOTE_URL"):
-
+    print ("filename is: %s" % fname)
     if os.path.isfile(fname) == False:
-
+	print ("Stupid file can't be found")
         if os.path.exists(os.path.join(os.path.dirname(fname), remoteurl)):                
             urlfname = os.path.join(os.path.dirname(fname), remoteurl)
             try:

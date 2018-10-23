@@ -13,7 +13,7 @@ from .susy import get_susy_files, get_susy_data, get_susy_generator
 
 def get_data_path():
 
-    return os.path.join(os.getcwd().split('woody')[0], "woody/data")
+    return os.path.join(os.getcwd().split('/woody')[0], "woody/data")
 
 def artificial(train_size=1000, seed=0, data_path=None):
 
