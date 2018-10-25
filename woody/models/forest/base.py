@@ -13,7 +13,9 @@ from .util import PickableWoodyRFWrapper, ensure_data_types
 from woody.util.array import transpose_array
 from woody.util import draw_single_tree
 
-def print_a_tree(X, preds_fut, indices, params, forest, preds):
+from treesolver_python import treesolve
+
+def print_a_tree(X, preds_fut, indices, params, forest, preds, tree):
 #    print("Saving tree to csv")
 #    np.savetxt("X.csv", X, delimiter=',')
     print(X)
@@ -23,6 +25,7 @@ def print_a_tree(X, preds_fut, indices, params, forest, preds):
     print("Printing forest object")
     print(forest)
     print("Done printing forest object")
+    print(tree)
 #    np.savetxt("forest.csv", forest[0], delimiter=',')    
     print(preds)
 
@@ -277,9 +280,22 @@ class Wood(object):
 
         preds = np.ones((X.shape[0], self.n_estimators), dtype=self.numpy_dtype_float)
 
-        self.wrapper.module.predict_all_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
-        print_a_tree(X, preds, indices, self.wrapper.params, self.wrapper.forest, preds)
+        for i in range(self.wrapper.forest.n_trees):
+            tree = self.get_node_array(i)
+            #treesolve(X, preds, indices, self.wrapper.params, self.wrapper.forest, preds)
+            preds[i] = treesolve(X, indices, tree)
         return preds
+
+    def get_node_array(self, index):
+        nodes = []
+        n_nodes = self.get_n_nodes(index)
+        tree = self.get_wrapped_tree(index)
+        for i in xrange(n_nodes):
+            # i is also the node_id (stored consecutively)
+            node = self.wrapper.module.TREE_NODE()
+            self.wrapper.module.get_tree_node_extern(tree, i, node)
+            nodes.append(node)
+        return nodes
 
     def get_leaves_ids(self, X, n_jobs=1, indices=None, verbose=0):
 
