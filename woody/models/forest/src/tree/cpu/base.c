@@ -195,30 +195,45 @@ int dindices, PARAMETERS *params, FOREST *forest) {
 void cpu_query_tree(TREE tree, FLOAT_TYPE *Xtest, int nXtest, int dXtest,
 FLOAT_TYPE *predictions, int *indices, int dindices, int prediction_type) {
 
+  // start from root
 	register TREE_NODE *node = tree.root;
+
+  // tpatt = pointer to the start of the current row of the test data
 	register FLOAT_TYPE *tpatt;
 
+  // i = prediction index
+  // node_id = id of the current node
+  // idx = row of the test data to be used for the current prediction
 	register unsigned int i, node_id, idx;
 
+  // if no indices are given, make as many predictions as there are rows in the test data
 	int n_preds = nXtest;
 	if (dindices > 0) {
+    // If indices are given, make as many predictions as there are indices
 		n_preds = dindices;
 	}
 	for (i = 0; i < n_preds; i++) {
-
 		if (dindices > 0) {
+      // If there are indices, use their index for row of the current prediction
 			idx = indices[i];
 		} else {
+      // Otherwise use the index of the current prediction
 			idx = i;
 		}
 
 		tpatt = Xtest + idx * dXtest;
+    // node_id = ID of the root node
 		node_id = TREE_ROOT_ID;
 
+    // Loop until a leaf node is reached
 		while (node[node_id].left_id != TREE_CHILD_ID_NOT_SET) {
+      // If test value taken from (idx, node.feature) where node is the current node
+      // is less than or equal to the node.thres_or_leaf
 			if (tpatt[node[node_id].feature] <= node[node_id].thres_or_leaf) {
+        // Take the left child
 				node_id = node[node_id].left_id;
 			} else {
+        // Take the right child
 				node_id = node[node_id].right_id;
 			}
 		}
