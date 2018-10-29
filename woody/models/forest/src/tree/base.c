@@ -90,32 +90,109 @@ void fit_extern(FLOAT_TYPE *Xtrain,
 	STOP_MY_TIMER(params->timers + 3);
 	PRINT(params)("Fitting time (extern): \t\t\t\t\t\t\t\t\t%2.10f\n",
 	GET_MY_TIMER(params->timers + 3));
-
+	
 }
+
+void print_tree_extern(FOREST  *forest) {
+  printf ("Trying to print first tree in forest...\n");
+  TREE *tmp;
+  tmp = forest->trees;
+  TREE_NODE *node;
+  node = tmp->root;
+
+  FILE *finfo = fopen("data_info.txt", "w");
+  fprintf(finfo, "node_counter: %d\n", tmp->node_counter);
+  fprintf(finfo, "n_allocated: %d\n", tmp->n_allocated);
+  fclose(finfo);
+  
+  FILE *left_ids = fopen("left_ids.txt", "w");
+  if (left_ids == NULL) {
+    printf("Error opening file left_ids.txt.\n");
+    exit(1);
+  }
+  FILE *right_ids = fopen("right_ids.txt", "w");
+  if (right_ids == NULL) {
+    printf("Error opening file right_ids.txt.\n");
+    exit(1);
+  }
+  FILE *features = fopen("features.txt", "w");
+  if (features == NULL) {
+    printf("Error opening file features.txt.\n");
+    exit(1);
+  }
+  FILE *thres_or_leaf = fopen("thres_or_leaf.txt", "w");
+  if (thres_or_leaf == NULL) {
+    printf("Error opening file thres_or_leaf.txt.\n");
+    exit(1);
+  }
+  FILE *leaf_criterion = fopen("leaf_criterion.txt", "w");
+  if (leaf_criterion == NULL) {
+    printf("Error opening file leaf_criterion.txt.\n");
+    exit(1);
+  }
+  
+  /* fprintf(f, "node_counter: %d\n", tmp->node_counter); */
+  /* fprintf(f, "n_allocated: %d\n", tmp->n_allocated); */
+  /* fclose(f); */
+  fprintf(left_ids, "[ ");
+  fprintf(right_ids, "[ ");
+  fprintf(features, "[ ");
+  fprintf(thres_or_leaf, "[ ");
+  fprintf(leaf_criterion, "[ ");
+  unsigned int i;
+  for (i = 0; i < tmp->n_allocated; i++){
+    
+    node = &tmp->root[i];
+    //    printf ("Printing node with index %u\n", i);
+    unsigned int tmpl = node->left_id;
+    unsigned int tmpr = node->right_id;
+    unsigned int feature = node->feature;
+    FLOAT_TYPE thres = node->thres_or_leaf;
+    unsigned int leaf_crit = node->leaf_criterion;
+    fprintf (left_ids, "%u, ", tmpl);
+    fprintf(right_ids, "%u, ", tmpr);
+    fprintf (features, "%u, ", feature);
+    fprintf (thres_or_leaf, "%f, ", thres);
+    fprintf (leaf_criterion, "%u, ", leaf_crit);
+  }
+  fprintf(left_ids, " ]\n");
+  fclose(left_ids);
+  fprintf(right_ids, " ]\n");
+  fclose(right_ids);
+  fprintf(features, " ]\n");
+  fclose(features);
+  fprintf(thres_or_leaf, " ]\n");
+  fclose(thres_or_leaf);
+  fprintf(leaf_criterion, " ]\n");
+  fclose(leaf_criterion);
+
+  
+}
+
 
 /* --------------------------------------------------------------------------------
  * Compute predictions (extern)
  * --------------------------------------------------------------------------------
  */
 void predict_extern(FLOAT_TYPE *Xtest,
-		int nXtest,
-		int dXtest,
-		FLOAT_TYPE *predictions,
-		int npredictions,
-		int *indices,
-		int nindices,
-		int dindices,
-		PARAMETERS *params,
-		FOREST *forest) {
+		    int nXtest,
+		    int dXtest,
+		    FLOAT_TYPE *predictions,
+		    int npredictions,
+		    int *indices,
+		    int nindices,
+		    int dindices,
+		    PARAMETERS *params,
+		    FOREST *forest) {
 
-	PRINT(params)("Computing predictions ...\n");
+  PRINT(params)("Computing predictions ...\n");
 
-	PREDICT(Xtest, nXtest, dXtest, predictions, indices, dindices, params, forest);
+  PREDICT(Xtest, nXtest, dXtest, predictions, indices, dindices, params, forest);
 
-	PRINT(params)("Prediction time (extern): \t\t\t\t\t\t\t\t%2.10f\n",
-	GET_MY_TIMER(params->timers + 1));
-	PRINT(params)(" -> Tree queries: \t\t\t\t\t\t\t\t\t%2.10f\n",
-	GET_MY_TIMER(params->timers + 2));
+  PRINT(params)("Prediction time (extern): \t\t\t\t\t\t\t\t%2.10f\n",
+		GET_MY_TIMER(params->timers + 1));
+  PRINT(params)(" -> Tree queries: \t\t\t\t\t\t\t\t\t%2.10f\n",
+		GET_MY_TIMER(params->timers + 2));
 
 }
 
@@ -124,20 +201,20 @@ void predict_extern(FLOAT_TYPE *Xtest,
  * --------------------------------------------------------------------------------
  */
 void predict_all_extern(FLOAT_TYPE *Xtest, int nXtest, int dXtest,
-		FLOAT_TYPE *preds, int npreds, int dpreds, int *indices, int nindices,
-		int dindices, PARAMETERS *params, FOREST *forest) {
+			FLOAT_TYPE *preds, int npreds, int dpreds, int *indices, int nindices,
+			int dindices, PARAMETERS *params, FOREST *forest) {
 
-	PRINT(params)("Computing all predictions ...\n");
+  PRINT(params)("Computing all predictions ...\n");
 
-	cpu_query_forest_all_preds(Xtest, nXtest, dXtest, preds, npreds, dpreds, indices, dindices, params, forest);
+  cpu_query_forest_all_preds(Xtest, nXtest, dXtest, preds, npreds, dpreds, indices, dindices, params, forest);
 
-	PRINT(params)("Prediction time (extern): \t\t\t\t\t\t\t\t%2.10f\n",
-	GET_MY_TIMER(params->timers + 1));
-	PRINT(params)(" -> Tree queries: \t\t\t\t\t\t\t\t\t%2.10f\n",
-	GET_MY_TIMER(params->timers + 2));
+  PRINT(params)("Prediction time (extern): \t\t\t\t\t\t\t\t%2.10f\n",
+		GET_MY_TIMER(params->timers + 1));
+  PRINT(params)(" -> Tree queries: \t\t\t\t\t\t\t\t\t%2.10f\n",
+		GET_MY_TIMER(params->timers + 2));
 
 #if USE_GPU > 0
-	PRINT(params)(" --> Kernel query trees: \t\t\t\t\t\t\t\t%2.10f\n", GET_MY_TIMER(params->timers + 3));
+  PRINT(params)(" --> Kernel query trees: \t\t\t\t\t\t\t\t%2.10f\n", GET_MY_TIMER(params->timers + 3));
 #endif
 
 }
@@ -148,7 +225,7 @@ void predict_all_extern(FLOAT_TYPE *Xtest, int nXtest, int dXtest,
  */
 void free_resources_extern(PARAMETERS *params, FOREST *forest) {
 
-	FREE_RESOURCES(params, forest);
+  FREE_RESOURCES(params, forest);
 
 }
 
@@ -158,18 +235,18 @@ void free_resources_extern(PARAMETERS *params, FOREST *forest) {
  */
 long get_num_bytes_forest_extern(PARAMETERS *params, FOREST *forest) {
 
-	int b, n_bytes;
+  int b, n_bytes;
 
-	n_bytes = 0;
-	n_bytes += sizeof(PARAMETERS);
-	n_bytes += sizeof(FOREST);
+  n_bytes = 0;
+  n_bytes += sizeof(PARAMETERS);
+  n_bytes += sizeof(FOREST);
 
-	for (b = 0; b < forest->n_trees; b++) {
-		n_bytes += sizeof(TREE);
-		n_bytes += forest->trees[b].n_allocated * sizeof(TREE_NODE);
-	}
+  for (b = 0; b < forest->n_trees; b++) {
+    n_bytes += sizeof(TREE);
+    n_bytes += forest->trees[b].n_allocated * sizeof(TREE_NODE);
+  }
 
-	return n_bytes;
+  return n_bytes;
 
 }
 
@@ -178,31 +255,31 @@ long get_num_bytes_forest_extern(PARAMETERS *params, FOREST *forest) {
  * --------------------------------------------------------------------------------
  */
 void get_forest_as_array_extern(PARAMETERS *params, FOREST *forest,
-		int *aforest, int naforest) {
+				int *aforest, int naforest) {
 
-	int b;
-	int counter = 0;
+  int b;
+  int counter = 0;
 
-	// cast pointer
-	void *aforest_casted = (void*) aforest;
+  // cast pointer
+  void *aforest_casted = (void*) aforest;
 
-	memcpy(aforest_casted + counter, params, sizeof(PARAMETERS));
-	counter += sizeof(PARAMETERS);
+  memcpy(aforest_casted + counter, params, sizeof(PARAMETERS));
+  counter += sizeof(PARAMETERS);
 
-	memcpy(aforest_casted + counter, forest, sizeof(FOREST));
-	counter += sizeof(FOREST);
+  memcpy(aforest_casted + counter, forest, sizeof(FOREST));
+  counter += sizeof(FOREST);
 
-	// store all trees
-	for (b = 0; b < forest->n_trees; b++) {
+  // store all trees
+  for (b = 0; b < forest->n_trees; b++) {
 
-		memcpy(aforest_casted + counter, forest->trees + b, sizeof(TREE));
-		counter += sizeof(TREE);
+    memcpy(aforest_casted + counter, forest->trees + b, sizeof(TREE));
+    counter += sizeof(TREE);
 
-		memcpy(aforest_casted + counter, forest->trees[b].root,
-				forest->trees[b].n_allocated * sizeof(TREE_NODE));
-		counter += forest->trees[b].n_allocated * sizeof(TREE_NODE);
+    memcpy(aforest_casted + counter, forest->trees[b].root,
+	   forest->trees[b].n_allocated * sizeof(TREE_NODE));
+    counter += forest->trees[b].n_allocated * sizeof(TREE_NODE);
 
-	}
+  }
 
 }
 
@@ -211,34 +288,34 @@ void get_forest_as_array_extern(PARAMETERS *params, FOREST *forest,
  * --------------------------------------------------------------------------------
  */
 void restore_forest_from_array_extern(PARAMETERS *params, FOREST *forest,
-		int *aforest, int naforest) {
+				      int *aforest, int naforest) {
 
-	int b;
-	int counter = 0;
+  int b;
+  int counter = 0;
 
-	// cast pointer
-	void *aforest_casted = (void*) aforest;
+  // cast pointer
+  void *aforest_casted = (void*) aforest;
 
-	memcpy(params, aforest_casted + counter, sizeof(PARAMETERS));
-	counter += sizeof(PARAMETERS);
+  memcpy(params, aforest_casted + counter, sizeof(PARAMETERS));
+  counter += sizeof(PARAMETERS);
 
-	memcpy(forest, aforest_casted + counter, sizeof(FOREST));
-	counter += sizeof(FOREST);
+  memcpy(forest, aforest_casted + counter, sizeof(FOREST));
+  counter += sizeof(FOREST);
 
-	// load all trees
-	forest->trees = (TREE*) malloc(forest->n_trees * sizeof(TREE));
-	for (b = 0; b < forest->n_trees; b++) {
+  // load all trees
+  forest->trees = (TREE*) malloc(forest->n_trees * sizeof(TREE));
+  for (b = 0; b < forest->n_trees; b++) {
 
-		memcpy(forest->trees + b, aforest_casted + counter, sizeof(TREE));
-		counter += sizeof(TREE);
+    memcpy(forest->trees + b, aforest_casted + counter, sizeof(TREE));
+    counter += sizeof(TREE);
 
-		forest->trees[b].root = (TREE_NODE*) malloc(
-				forest->trees[b].n_allocated * sizeof(TREE_NODE));
-		memcpy(forest->trees[b].root, aforest_casted + counter,
-				forest->trees[b].n_allocated * sizeof(TREE_NODE));
-		counter += forest->trees[b].n_allocated * sizeof(TREE_NODE);
+    forest->trees[b].root = (TREE_NODE*) malloc(
+						forest->trees[b].n_allocated * sizeof(TREE_NODE));
+    memcpy(forest->trees[b].root, aforest_casted + counter,
+	   forest->trees[b].n_allocated * sizeof(TREE_NODE));
+    counter += forest->trees[b].n_allocated * sizeof(TREE_NODE);
 
-	}
+  }
 
 }
 
@@ -248,26 +325,26 @@ void restore_forest_from_array_extern(PARAMETERS *params, FOREST *forest,
  */
 void save_forest_extern(PARAMETERS *params, FOREST *forest, char *fname) {
 
-	int b;
+  int b;
 
-	FILE *ofile = fopen(fname, "w");
+  FILE *ofile = fopen(fname, "w");
 
-	if (ofile != NULL) {
+  if (ofile != NULL) {
 
-		fwrite(params, sizeof(PARAMETERS), 1, ofile);
-		fwrite(forest, sizeof(FOREST), 1, ofile);
+    fwrite(params, sizeof(PARAMETERS), 1, ofile);
+    fwrite(forest, sizeof(FOREST), 1, ofile);
 
-		// store all trees
-		for (b = 0; b < forest->n_trees; b++) {
-			fwrite(forest->trees + b, sizeof(TREE), 1, ofile);
-			// store all nodes
-			fwrite(forest->trees[b].root,
-					forest->trees[b].n_allocated * sizeof(TREE_NODE), 1, ofile);
-		}
+    // store all trees
+    for (b = 0; b < forest->n_trees; b++) {
+      fwrite(forest->trees + b, sizeof(TREE), 1, ofile);
+      // store all nodes
+      fwrite(forest->trees[b].root,
+	     forest->trees[b].n_allocated * sizeof(TREE_NODE), 1, ofile);
+    }
 
-		fclose(ofile);
+    fclose(ofile);
 
-	}
+  }
 
 }
 
@@ -277,32 +354,32 @@ void save_forest_extern(PARAMETERS *params, FOREST *forest, char *fname) {
  */
 void load_forest_extern(PARAMETERS *params, FOREST *forest, char *fname) {
 
-	int b;
-	int retvals = 0;
+  int b;
+  int retvals = 0;
 
-	FILE *ifile = fopen(fname, "r");
+  FILE *ifile = fopen(fname, "r");
 
-	if (ifile != NULL) {
+  if (ifile != NULL) {
 
-		retvals = fread(params, sizeof(PARAMETERS), 1, ifile);
-		retvals = fread(forest, sizeof(FOREST), 1, ifile);
+    retvals = fread(params, sizeof(PARAMETERS), 1, ifile);
+    retvals = fread(forest, sizeof(FOREST), 1, ifile);
 
-		// load all trees
-		for (b = 0; b < forest->n_trees; b++) {
-			retvals = fread(forest->trees + b, sizeof(TREE), 1, ifile);
-			// load all nodes
-			retvals = fread(forest->trees[b].root,
-					forest->trees[b].n_allocated * sizeof(TREE_NODE), 1, ifile);
+    // load all trees
+    for (b = 0; b < forest->n_trees; b++) {
+      retvals = fread(forest->trees + b, sizeof(TREE), 1, ifile);
+      // load all nodes
+      retvals = fread(forest->trees[b].root,
+		      forest->trees[b].n_allocated * sizeof(TREE_NODE), 1, ifile);
 
-		}
+    }
 
-		fclose(ifile);
-	}
+    fclose(ifile);
+  }
 
-	if (retvals < 0) {
-		printf("Error while loading forest from file!\n");
-		exit(EXIT_FAILURE);
-	}
+  if (retvals < 0) {
+    printf("Error while loading forest from file!\n");
+    exit(EXIT_FAILURE);
+  }
 }
 
 /* --------------------------------------------------------------------------------
@@ -311,10 +388,10 @@ void load_forest_extern(PARAMETERS *params, FOREST *forest, char *fname) {
  */
 void get_tree_extern(TREE *tree, unsigned int index, FOREST *forest) {
 
-	TREE *t = forest->trees + index;
-	tree->root = t->root;
-	tree->n_allocated = t->n_allocated;
-	tree->node_counter = t->node_counter;
+  TREE *t = forest->trees + index;
+  tree->root = t->root;
+  tree->n_allocated = t->n_allocated;
+  tree->node_counter = t->node_counter;
 
 }
 
@@ -324,11 +401,11 @@ void get_tree_extern(TREE *tree, unsigned int index, FOREST *forest) {
  */
 void get_tree_node_extern(TREE *tree, int node_id, TREE_NODE *node) {
 
-	node->feature = tree->root[node_id].feature;
-	node->left_id = tree->root[node_id].left_id;
-	node->right_id = tree->root[node_id].right_id;
-	node->thres_or_leaf = tree->root[node_id].thres_or_leaf;
-	node->leaf_criterion = tree->root[node_id].leaf_criterion;
+  node->feature = tree->root[node_id].feature;
+  node->left_id = tree->root[node_id].left_id;
+  node->right_id = tree->root[node_id].right_id;
+  node->thres_or_leaf = tree->root[node_id].thres_or_leaf;
+  node->leaf_criterion = tree->root[node_id].leaf_criterion;
 
 }
 
@@ -337,10 +414,10 @@ void get_tree_node_extern(TREE *tree, int node_id, TREE_NODE *node) {
  * --------------------------------------------------------------------------------
  */
 void attach_tree_extern(unsigned int index, FOREST *forest, TREE *subtree,
-		int leaf_id) {
+			int leaf_id) {
 
-	TREE *tree = forest->trees + index;
-	attach_tree(tree, subtree, leaf_id);
+  TREE *tree = forest->trees + index;
+  attach_tree(tree, subtree, leaf_id);
 
 }
 
@@ -350,30 +427,30 @@ void attach_tree_extern(unsigned int index, FOREST *forest, TREE *subtree,
  */
 void print_parameters_extern(PARAMETERS *params) {
 
-	printf(
-			"=================================== Parameter Settings ===================================\n");
-	printf("Initial seed (seed): %i\n", params->seed);
-	printf("Number of estimators (n_estimators): %i\n", params->n_estimators);
-	printf("Number of minimum samples per split (min_samples_split): %i\n",
-			params->min_samples_split);
-	printf("Number of maximum features (max_features): %i\n",
-			params->max_features);
-	printf("Make use of bootstrap indices (bootstrap): %i\n",
-			params->bootstrap);
-	printf("Maximum depth of tree (max_depth): %i\n", params->max_depth);
-	printf("Minimum number of samples per leaf (min_samples_leaf): %i\n",
-			params->min_samples_leaf);
-	printf("Number of threads for CPU (num_threads): %i\n",
-			params->num_threads);
-	printf("Level of verbosity (verbosity_level): %i\n",
-			params->verbosity_level);
-	printf("Tree traversal mode (tree_traversal_mode): %i\n",
-			params->tree_traversal_mode);
-	printf("Criterion used for computing splits: %i\n", params->criterion);
-	printf("Learning type: %i\n", params->learning_type);
-	printf("Tree type (tree_type): %i\n", params->tree_type);
-	printf("Double precision? (USE_DOUBLE): %i\n", USE_DOUBLE);
-	printf(
-			"==========================================================================================\n");
+  printf(
+	 "=================================== Parameter Settings ===================================\n");
+  printf("Initial seed (seed): %i\n", params->seed);
+  printf("Number of estimators (n_estimators): %i\n", params->n_estimators);
+  printf("Number of minimum samples per split (min_samples_split): %i\n",
+	 params->min_samples_split);
+  printf("Number of maximum features (max_features): %i\n",
+	 params->max_features);
+  printf("Make use of bootstrap indices (bootstrap): %i\n",
+	 params->bootstrap);
+  printf("Maximum depth of tree (max_depth): %i\n", params->max_depth);
+  printf("Minimum number of samples per leaf (min_samples_leaf): %i\n",
+	 params->min_samples_leaf);
+  printf("Number of threads for CPU (num_threads): %i\n",
+	 params->num_threads);
+  printf("Level of verbosity (verbosity_level): %i\n",
+	 params->verbosity_level);
+  printf("Tree traversal mode (tree_traversal_mode): %i\n",
+	 params->tree_traversal_mode);
+  printf("Criterion used for computing splits: %i\n", params->criterion);
+  printf("Learning type: %i\n", params->learning_type);
+  printf("Tree type (tree_type): %i\n", params->tree_type);
+  printf("Double precision? (USE_DOUBLE): %i\n", USE_DOUBLE);
+  printf(
+	 "==========================================================================================\n");
 
 }

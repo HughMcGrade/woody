@@ -15,20 +15,6 @@ from woody.util import draw_single_tree
 
 from treesolver_python import treesolve
 
-def print_a_tree(X, preds_fut, indices, params, forest, preds, tree):
-#    print("Saving tree to csv")
-#    np.savetxt("X.csv", X, delimiter=',')
-    print(X)
-    print(preds_fut)
-    print(indices)
-    print(params)
-    print("Printing forest object")
-    print(forest)
-    print("Done printing forest object")
-    print(tree)
-#    np.savetxt("forest.csv", forest[0], delimiter=',')    
-    print(preds)
-
 class Wood(object):
     """
     Random forest implementation.
@@ -151,7 +137,7 @@ class Wood(object):
             self.setattr(parameter, value)
 
     def fit(self, X, y, indices=None):
-#        from .treesolver_python import treesolve
+
         """ If indices is not None, then
         consider X[indices] instead of X
         (in-place).
@@ -241,6 +227,8 @@ class Wood(object):
             indices_weights = np.empty((0, 0), dtype=np.int32)
 
         self.wrapper.module.fit_extern(X, y, indices, indices_weights, use_indices, self.wrapper.params, self.wrapper.forest)
+        # Print the first tree of the forest
+        self.wrapper.module.print_tree_extern(self.wrapper.forest)
 
         return self
 
@@ -280,10 +268,11 @@ class Wood(object):
 
         preds = np.ones((X.shape[0], self.n_estimators), dtype=self.numpy_dtype_float)
 
-        for i in range(self.wrapper.forest.n_trees):
+#        self.wrapper.module.print_tree_extern(self.wrapper.forest)
+        
+        for i in range(self.wrapper.forest.n_trees):                
             tree = self.get_node_array(i)
-            #treesolve(X, preds, indices, self.wrapper.params, self.wrapper.forest, preds)
-            preds[i] = treesolve(X, indices, tree)
+            preds[i] = treesolve(X, indices, tree, self.wrapper)
         return preds
 
     def get_node_array(self, index):
