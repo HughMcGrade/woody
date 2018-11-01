@@ -32,27 +32,8 @@ def build_wood(param_wood):
                 max_depth=None,
                 verbose=0)
 
-def build_model(param_wood, wrapped_instance, param, top_tree_lambda):
-    return HugeWoodClassifier(
-               n_estimators=param['n_estimators'],
-               n_estimators_bottom=param['n_estimators_bottom'],
-               n_top="auto",
-               n_patterns_leaf="auto",
-               balanced_top_tree=True,
-               top_tree_lambda=top_tree_lambda,
-               top_tree_max_depth=None,
-               top_tree_type="standard",
-               top_tree_leaf_stopping_mode="ignore_impurity",
-               n_jobs=param_wood['n_jobs'],
-               seed=seed,
-               verbose=1,
-               plot_intermediate={},
-               chunk_max_megabytes=2048,
-               wrapped_instance=wrapped_instance,
-               store=MemoryStore(),
-               )
-
-def newfun(n_queries, n_features):
+def newfun(Xtest):
+    n_queries, n_features = len(Xtest), len(Xtest[0])
     data_headers = [("features", int), ("leaf_criterion", int), ("left_ids", int), ("right_ids",int), ("thres_or_leaf",float)]
     data_values = {}
     query_values = []
@@ -77,6 +58,10 @@ def newfun(n_queries, n_features):
             nodes.append((data_values["left_ids"][node[0]],node[1]+1))
             nodes.append((data_values["right_ids"][node[0]],node[1]+1))
 
+
+    for row in Xtest:
+        query_values.extend([int(i) for i in row])
+            
     with open("tmp_tree",'w') as file:
         file.write('{} {} {} {} {} {} {} {} {} {} {}'.format(\
                     str(data_values["left_ids"]),
@@ -90,8 +75,32 @@ def newfun(n_queries, n_features):
                     0,
                     0,
                     nodes[len(nodes)-1][1]))
+def compare_predictions(cpu_pred, futhark_preds):
+    print ("Length of woody preds: {}".format(len(cpu_pred)))
+    print ("Length of futhark preds: {}".format(len(futhark_preds)))
 
+    correct = 0
+    error = 0
+    diff_sum = 0
+    print ("First 10 entries of both:")
+    print ("Futhark: {}".format(futhark_preds[:10]))
+    print("Woody: {}".format(cpu_pred[:10]))
+    
+    for i in range(min(len(cpu_pred), len(futhark_preds))):
+        if (cpu_pred[i] == futhark_preds[i]):
+            correct += 1
+        else:
+            error += 1
+            diff_sum += abs(cpu_pred[i]-futhark_preds[i])
+    print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, (diff_sum / error)))
 
+def get_futhark_predictions(fname):
+    futhark_preds = []
+    with open(fname) as file:
+        for line in file.readlines():
+            stripped = line.replace("[","").replace("i32","").replace(" ","").replace("]","").strip().split(",")
+            futhark_preds.extend([float(i) for i in stripped])
+    return futhark_preds
 
 def single_run(dkey, train_size, param, seed):
 
@@ -142,12 +151,10 @@ def single_run(dkey, train_size, param, seed):
 
     print("Calling predict_single_tree...")
     cpu_pred_start_time = time.time()
-    tmpPred = super(WoodClassifier, model).predict_single_tree(Xtest)
+    cpu_pred = super(WoodClassifier, model).predict_single_tree(Xtest)
     cpu_pred_stop_time = time.time()
     print("After calling predict_single_tree...")
     print("CPU Call took: %f" % (cpu_pred_stop_time - cpu_pred_start_time))
-    print("tmpPred:")
-    print(tmpPred)
     print("Calling predict_single_tree again to save the predictions to file.")
     super(WoodClassifier, model).predict_single_tree_save_predictions(Xtest)
     print("Saving the first tree of the forest, so we can reload it in futhark")
@@ -158,7 +165,7 @@ def single_run(dkey, train_size, param, seed):
     print("Trying to generate futhark tree...")
     # This will read the tree from file,
     # restructure it for futhark and save as a new file called tmp_tree.  
-    newfun(len(Xtest), len(Xtest[0]))
+    newfun(Xtest)
     
     print ("Trying to call futhark from python")
     futstart = time.time()
@@ -183,17 +190,55 @@ def single_run(dkey, train_size, param, seed):
     os.system(cmd)
     futstop = time.time()
     print("Futhark call took: %f" % (futstop - futstart))
-    sum = 0
-    for i in range(10):
-        futstart = time.time()
-        cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
-        print("Command: {}".format(cmd))
-        os.system(cmd)
-        futstop = time.time()
-        sum += (futstop - futstart)
-    avg = sum / 10.0
-    print("Average of 10 calls: {}".format(avg))
+    # sum = 0
+    # for i in range(10):
+    #     futstart = time.time()
+    #     cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
+    #     print("Command: {}".format(cmd))
+    #     os.system(cmd)
+    #     futstop = time.time()
+    #     sum += (futstop - futstart)
+    # avg = sum / 10.0
+    # print("Average of 10 calls: {}".format(avg))
 
+# ================================================================================
+# evaluation of correctness
+# ================================================================================
+
+
+    print("Comparing basicout")
+    futpreds = get_futhark_predictions("basicout.txt")
+    compare_predictions(cpu_pred, futpreds)
+
+    print("Comparing flatout")
+    futpreds = get_futhark_predictions("flatout.txt")
+    compare_predictions(cpu_pred, futpreds)
+
+    print("Comparing pruneout")
+    futpreds = get_futhark_predictions("pruneout.txt")
+    compare_predictions(cpu_pred, futpreds)
+
+
+
+    # print ("Length of woody preds: {}".format(len(cpu_pred)))
+    # print ("Length of futhark preds: {}".format(len(futhark_preds)))
+
+    # correct = 0
+    # error = 0
+    # diff_sum = 0
+    # print ("First 10 entries of both:")
+    # print ("Futhark: {}".format(futhark_preds[:10]))
+    # print("Woody: {}".format(cpu_pred[:10]))
+    
+    # for i in range(min(len(cpu_pred), len(futhark_preds))):
+    #     if (cpu_pred[i] == futhark_preds[i]):
+    #         correct += 1
+    #     else:
+    #         error += 1
+    #         diff_sum += abs(cpu_pred[i]-futhark_preds[i])
+    # print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, (diff_sum / error)))
+    
+            
 ###################################################################################
 import argparse
 parser = argparse.ArgumentParser()
