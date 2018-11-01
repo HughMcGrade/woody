@@ -92,14 +92,57 @@ void fit_extern(FLOAT_TYPE *Xtrain,
 	GET_MY_TIMER(params->timers + 3));
 	
 }
+void predict_tree_extern(FLOAT_TYPE *Xtest,
+			 int nXtest,
+			 int dXtest,
+			 FLOAT_TYPE *predictions,
+			 int npredictions,
+			 int *indices,
+			 int nindices,
+			 int dindices,
+			 PARAMETERS *params,
+			 FOREST *forest){
+  cpu_query_tree(forest->trees[0], Xtest, nXtest, dXtest, predictions, indices, dindices, params->prediction_type);
+ 
+}
+void predict_tree_extern_save_predictions(FLOAT_TYPE *Xtest,
+					  int nXtest,
+			 int dXtest,
+			 FLOAT_TYPE *predictions,
+			 int npredictions,
+			 int *indices,
+			 int nindices,
+			 int dindices,
+			 PARAMETERS *params,
+			 FOREST *forest){
+  printf ("Trying to predict first tree in forest...\n");
+  cpu_query_tree(forest->trees[0], Xtest, nXtest, dXtest, predictions, indices, dindices, params->prediction_type);
+  printf("Writing predictions to file...\n");
+  FILE *file = fopen("predictions_tmp.txt", "w");  
+  int myInc;
+  fprintf(file, "[ ");
+  for (myInc = 0; myInc < nXtest; myInc++)
+    {
+      //      fprintf(file, "Prediction %d: %f\n", myInc, predictions[myInc]);
+      fprintf(file, "%f", myInc, predictions[myInc]);
+      if (myInc < nXtest-1)
+	{      fprintf(file, ", ");
+
+	}
+    }
+  fprintf(file, " ]\n");
+  fclose(file);
+ 
+}
+
 
 void print_tree_extern(FOREST  *forest) {
-  printf ("Trying to print first tree in forest...\n");
+  printf ("Trying to save first tree in forest...\n");
   TREE *tmp;
   tmp = forest->trees;
   TREE_NODE *node;
   node = tmp->root;
-
+  
   FILE *finfo = fopen("data_info.txt", "w");
   fprintf(finfo, "node_counter: %d\n", tmp->node_counter);
   fprintf(finfo, "n_allocated: %d\n", tmp->n_allocated);
@@ -165,7 +208,6 @@ void print_tree_extern(FOREST  *forest) {
   fclose(thres_or_leaf);
   fprintf(leaf_criterion, " ]\n");
   fclose(leaf_criterion);
-
   
 }
 

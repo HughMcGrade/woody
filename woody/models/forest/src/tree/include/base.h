@@ -63,24 +63,52 @@ void fit_extern(FLOAT_TYPE *Xtrain,
 
 
 /* --------------------------------------------------------------------------------
+ * Predict a single tree (extern)
+ * --------------------------------------------------------------------------------
+ */
+void predict_tree_extern(FLOAT_TYPE *Xtest,
+			 int nXtest,
+			 int dXtest,
+			 FLOAT_TYPE *predictions,
+			 int npredictions,
+			 int *indices,
+			 int nindices,
+			 int dindices,
+			 PARAMETERS *params,
+			 FOREST *forest);
+void predict_tree_extern_save_predictions(FLOAT_TYPE *Xtest,
+					  int nXtest,
+					  int dXtest,
+					  FLOAT_TYPE *predictions,
+					  int npredictions,
+					  int *indices,
+					  int nindices,
+					  int dindices,
+					  PARAMETERS *params,
+					  FOREST *forest);
+
+/* --------------------------------------------------------------------------------
  * Print a tree (extern)
  * --------------------------------------------------------------------------------
  */
-void print_tree_extern(FOREST *forest);
+  void print_tree_extern(FOREST *forest);
+
+
+
 /* --------------------------------------------------------------------------------
  * Compute predictions (extern)
  * --------------------------------------------------------------------------------
  */
-  void predict_extern(FLOAT_TYPE *Xtest,
-		      int nXtest,
-		      int dXtest,
-		      FLOAT_TYPE *predictions,
-		      int npredictions,
-		      int *indices,
-		      int nindices,
-		      int dindices,
-		      PARAMETERS *params,
-		      FOREST *forest);
+void predict_extern(FLOAT_TYPE *Xtest,
+		    int nXtest,
+		    int dXtest,
+		    FLOAT_TYPE *predictions,
+		    int npredictions,
+		    int *indices,
+		    int nindices,
+		    int dindices,
+		    PARAMETERS *params,
+		    FOREST *forest);
 
 void predict_all_extern(FLOAT_TYPE *Xtest,
 			int nXtest,

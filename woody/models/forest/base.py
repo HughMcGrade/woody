@@ -87,7 +87,7 @@ class Wood(object):
         self.lam_criterion = lam_criterion
         self.n_jobs = n_jobs
         self.verbose = verbose
-
+        self.wrapper = PickableWoodyRFWrapper(self.float_type)
         # set numpy float and int dtypes
         if self.float_type == "float":
             self.numpy_dtype_float = np.float32
@@ -107,6 +107,9 @@ class Wood(object):
             self.wrapper.module.free_resources_extern(self.wrapper.params,
                                                       self.wrapper.forest)
 
+    def get_wrapper(self):
+        return self.wrapper
+            
     def get_params(self, deep=True):
 
         return {"seed": self.seed,
@@ -228,10 +231,48 @@ class Wood(object):
 
         self.wrapper.module.fit_extern(X, y, indices, indices_weights, use_indices, self.wrapper.params, self.wrapper.forest)
         # Print the first tree of the forest
-        self.wrapper.module.print_tree_extern(self.wrapper.forest)
-
+#        self.wrapper.module.print_tree_extern(self.wrapper.forest)
         return self
 
+    def predict_single_tree(self, X, indices=None):
+        """
+        """
+        if X.dtype != self.numpy_dtype_float:
+            X = X.astype(self.numpy_dtype_float)
+
+        if indices is None:
+            indices = np.empty((0, 0), dtype=np.int32)
+        else:
+            indices = np.array(indices).astype(dtype=np.int32)
+            if indices.ndim == 1:
+                indices = indices.reshape((1, len(indices)))
+
+        preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+        self.wrapper.module.predict_tree_extern(X, preds, indices, self.wrapper.params, self.wrapper.forest)
+        return preds
+
+    def predict_single_tree_save_predictions(self, X, indices=None):
+        """
+        """
+        if X.dtype != self.numpy_dtype_float:
+            X = X.astype(self.numpy_dtype_float)
+
+        if indices is None:
+            indices = np.empty((0, 0), dtype=np.int32)
+        else:
+            indices = np.array(indices).astype(dtype=np.int32)
+            if indices.ndim == 1:
+                indices = indices.reshape((1, len(indices)))
+
+        preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+        self.wrapper.module.predict_tree_extern_save_predictions(X, preds, indices, self.wrapper.params, self.wrapper.forest)
+        return preds
+
+    
+    def save_first_tree(self):
+        print("Saving tree...")
+        self.wrapper.module.print_tree_extern(self.wrapper.forest)
+        print("Tree has been saved..")
     def predict(self, X, indices=None):
         """
         """
@@ -269,10 +310,12 @@ class Wood(object):
         preds = np.ones((X.shape[0], self.n_estimators), dtype=self.numpy_dtype_float)
 
 #        self.wrapper.module.print_tree_extern(self.wrapper.forest)
-        
-        for i in range(self.wrapper.forest.n_trees):                
-            tree = self.get_node_array(i)
-            preds[i] = treesolve(X, indices, tree, self.wrapper)
+#        preds[0] = self.predict_single_tree(X, indices)
+        # for i in range(self.wrapper.forest.n_trees):                
+        #     tree = self.get_node_array(i)
+        #     preds[i] = treesolve(X, indices, tree)
+        # print("Predictions of single tree!")
+        # print (preds[0])
         return preds
 
     def get_node_array(self, index):
