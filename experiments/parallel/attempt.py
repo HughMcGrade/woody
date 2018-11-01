@@ -52,6 +52,47 @@ def build_model(param_wood, wrapped_instance, param, top_tree_lambda):
                store=MemoryStore(),
                )
 
+def newfun(n_queries, n_features):
+    data_headers = [("features", int), ("leaf_criterion", int), ("left_ids", int), ("right_ids",int), ("thres_or_leaf",float)]
+    data_values = {}
+    query_values = []
+    
+    amount_of_queries = n_queries
+    amount_of_features = n_features
+
+    for header in data_headers:
+        print header
+        with open(os.path.join(header[0]+".txt")) as file:
+            data_values[header[0]] = [header[1](i) if header[1](i)<10000000 else 0 for i in file.readline().replace("[","").replace(",","").replace("]","").strip().split(" ")[1:-1]]
+
+    data_values["right_ids"]
+
+    #Crawl the tree
+    current_depth = 0
+    max_depth = 0
+    nodes = [(0,0)]
+
+    for node in nodes:
+        if ((data_values["left_ids"][node[0]] != 0) and (data_values["right_ids"][node[0]] != 0)):
+            nodes.append((data_values["left_ids"][node[0]],node[1]+1))
+            nodes.append((data_values["right_ids"][node[0]],node[1]+1))
+
+    with open("tmp_tree",'w') as file:
+        file.write('{} {} {} {} {} {} {} {} {} {} {}'.format(\
+                    str(data_values["left_ids"]),
+                    str(data_values["right_ids"]),
+                    str(data_values["features"]),
+                    str(data_values["thres_or_leaf"]),
+                    str(query_values),
+                    amount_of_queries,
+                    amount_of_features,
+                    "empty(i32)",
+                    0,
+                    0,
+                    nodes[len(nodes)-1][1]))
+
+
+
 def single_run(dkey, train_size, param, seed):
 
     print("Processing data set %s with train_size %s, seed %s, and parameters %s ..." % (str(dkey), str(train_size), str(seed), str(param)))
@@ -67,18 +108,10 @@ def single_run(dkey, train_size, param, seed):
 
 
     print("")
-    # print("Number of training patterns:\t%i" % traingen.get_shapes()[0][0])
-    # print("Number of test patterns:\t%i" % testgen.get_shapes()[0][0])
-    # print("Dimensionality of the data:\t%i\n" % traingen.get_shapes()[0][1])
     print("Number of training patterns:\t%i" % Xtrain.shape[0])
     print("Number of test patterns:\t%i" % Xtest.shape[0])
     print("Dimensionality of the data:\t%i\n" % Xtrain.shape[1])
 
-    # param_wood = param['param_wood']
-
-    # wood = build_wood(param_wood)
-    # top_tree_lambda = 0.1
-    # model = build_model(param_wood, wood, param, top_tree_lambda)
     model = WoodClassifier(
                 n_estimators=param['n_estimators'],
                 criterion="gini",
@@ -117,8 +150,49 @@ def single_run(dkey, train_size, param, seed):
     print(tmpPred)
     print("Calling predict_single_tree again to save the predictions to file.")
     super(WoodClassifier, model).predict_single_tree_save_predictions(Xtest)
+    print("Saving the first tree of the forest, so we can reload it in futhark")
     super(WoodClassifier, model).save_first_tree()
     time.sleep(1)
+
+
+    print("Trying to generate futhark tree...")
+    # This will read the tree from file,
+    # restructure it for futhark and save as a new file called tmp_tree.  
+    newfun(len(Xtest), len(Xtest[0]))
+    
+    print ("Trying to call futhark from python")
+    futstart = time.time()
+    cmd = 'cat tmp_tree | ./treesolver_basic > basicout.txt'
+    print("Command: {}".format(cmd))
+    os.system(cmd)
+    futstop = time.time()
+    print("Futhark call took: %f" % (futstop - futstart))
+
+    print ("Trying to call futhark from python")
+    futstart = time.time()
+    cmd = 'cat tmp_tree | ./treesolver > pruneout.txt'
+    print("Command: {}".format(cmd))
+    os.system(cmd)
+    futstop = time.time()
+    print("Futhark call took: %f" % (futstop - futstart))
+
+    print ("Trying to call futhark from python")
+    futstart = time.time()
+    cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
+    print("Command: {}".format(cmd))
+    os.system(cmd)
+    futstop = time.time()
+    print("Futhark call took: %f" % (futstop - futstart))
+    sum = 0
+    for i in range(10):
+        futstart = time.time()
+        cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
+        print("Command: {}".format(cmd))
+        os.system(cmd)
+        futstop = time.time()
+        sum += (futstop - futstart)
+    avg = sum / 10.0
+    print("Average of 10 calls: {}".format(avg))
 
 ###################################################################################
 import argparse
