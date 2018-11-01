@@ -190,6 +190,24 @@ def single_run(dkey, train_size, param, seed):
     os.system(cmd)
     futstop = time.time()
     print("Futhark call took: %f" % (futstop - futstart))
+
+    print ("Trying to call futhark from python")
+    futstart = time.time()
+    cmd = 'cat tmp_tree | ./treesolver_superflat > superflatout.txt'
+    print("Command: {}".format(cmd))
+    os.system(cmd)
+    futstop = time.time()
+    print("Futhark call took: %f" % (futstop - futstart))
+
+    print ("Trying to call futhark from python")
+    futstart = time.time()
+    cmd = 'cat tmp_tree | ./treesolver_precompute > pre_out.txt'
+    print("Command: {}".format(cmd))
+    os.system(cmd)
+    futstop = time.time()
+    print("Futhark call took: %f" % (futstop - futstart))
+
+
     # sum = 0
     # for i in range(10):
     #     futstart = time.time()
@@ -216,6 +234,14 @@ def single_run(dkey, train_size, param, seed):
 
     print("Comparing pruneout")
     futpreds = get_futhark_predictions("pruneout.txt")
+    compare_predictions(cpu_pred, futpreds)
+
+    print("Comparing superflatout")
+    futpreds = get_futhark_predictions("superflatout.txt")
+    compare_predictions(cpu_pred, futpreds)
+
+    print("Comparing pre_out")
+    futpreds = get_futhark_predictions("pre_out.txt")
     compare_predictions(cpu_pred, futpreds)
 
 
