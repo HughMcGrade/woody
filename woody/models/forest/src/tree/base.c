@@ -102,6 +102,7 @@ void predict_tree_extern(FLOAT_TYPE *Xtest,
 			 int dindices,
 			 PARAMETERS *params,
 			 FOREST *forest){
+  params->prediction_type = 1;
   cpu_query_tree(forest->trees[0], Xtest, nXtest, dXtest, predictions, indices, dindices, params->prediction_type);
  
 }
@@ -115,6 +116,7 @@ void predict_tree_extern_save_predictions(FLOAT_TYPE *Xtest,
 			 int dindices,
 			 PARAMETERS *params,
 			 FOREST *forest){
+  params->prediction_type = 1;  
   printf ("Trying to predict first tree in forest...\n");
   cpu_query_tree(forest->trees[0], Xtest, nXtest, dXtest, predictions, indices, dindices, params->prediction_type);
   printf("Writing predictions to file...\n");

@@ -56,7 +56,7 @@ class Wood(object):
                  bootstrap=True,
                  max_depth=None,
                  min_samples_leaf=1,
-                 learning_type=None,
+                 learning_type='classification',
                  criterion=None,
                  tree_traversal_mode="dfs",
                  leaf_stopping_mode="all",
@@ -76,7 +76,7 @@ class Wood(object):
         self.bootstrap = bootstrap
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
-        self.learning_type = learning_type
+        self.learning_type = 'classification'
         self.criterion = criterion
         self.tree_traversal_mode = tree_traversal_mode
         self.leaf_stopping_mode = leaf_stopping_mode
@@ -265,6 +265,7 @@ class Wood(object):
                 indices = indices.reshape((1, len(indices)))
 
         preds = np.ones(X.shape[0], dtype=self.numpy_dtype_float)
+
         self.wrapper.module.predict_tree_extern_save_predictions(X, preds, indices, self.wrapper.params, self.wrapper.forest)
         return preds
 
@@ -308,14 +309,6 @@ class Wood(object):
                 indices = indices.reshape((1, len(indices)))
 
         preds = np.ones((X.shape[0], self.n_estimators), dtype=self.numpy_dtype_float)
-
-#        self.wrapper.module.print_tree_extern(self.wrapper.forest)
-#        preds[0] = self.predict_single_tree(X, indices)
-        # for i in range(self.wrapper.forest.n_trees):                
-        #     tree = self.get_node_array(i)
-        #     preds[i] = treesolve(X, indices, tree)
-        # print("Predictions of single tree!")
-        # print (preds[0])
         return preds
 
     def get_node_array(self, index):

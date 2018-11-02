@@ -44,7 +44,7 @@ def newfun(Xtest):
     for header in data_headers:
         print header
         with open(os.path.join(header[0]+".txt")) as file:
-            data_values[header[0]] = [header[1](i) if header[1](i)<10000000 else 0 for i in file.readline().replace("[","").replace(",","").replace("]","").strip().split(" ")[1:-1]]
+            data_values[header[0]] = [header[1](i) if header[1](i)<10000000 else 0 for i in file.readline().replace("[","").replace("]","").replace(",","").strip().split(" ")[:-1]]
 
     data_values["right_ids"]
 
@@ -75,6 +75,8 @@ def newfun(Xtest):
                     0,
                     0,
                     nodes[len(nodes)-1][1]))
+
+
 def compare_predictions(cpu_pred, futhark_preds):
     print ("Length of woody preds: {}".format(len(cpu_pred)))
     print ("Length of futhark preds: {}".format(len(futhark_preds)))
@@ -92,7 +94,8 @@ def compare_predictions(cpu_pred, futhark_preds):
         else:
             error += 1
             diff_sum += abs(cpu_pred[i]-futhark_preds[i])
-    print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, (diff_sum / error)))
+    avg = 0 if (error == 0) else diff_sum/error
+    print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, avg))
 
 def get_futhark_predictions(fname):
     futhark_preds = []
@@ -155,6 +158,8 @@ def single_run(dkey, train_size, param, seed):
     cpu_pred_stop_time = time.time()
     print("After calling predict_single_tree...")
     print("CPU Call took: %f" % (cpu_pred_stop_time - cpu_pred_start_time))
+    print("Type of cpu_pred: {}".format(type(cpu_pred)))
+    
     print("Calling predict_single_tree again to save the predictions to file.")
     super(WoodClassifier, model).predict_single_tree_save_predictions(Xtest)
     print("Saving the first tree of the forest, so we can reload it in futhark")
