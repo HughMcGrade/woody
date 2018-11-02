@@ -174,7 +174,7 @@ def single_run(dkey, train_size, param, seed):
     
     print ("Trying to call futhark from python")
     futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_basic > basicout.txt'
+    cmd = 'cat tmp_tree | ./treesolver_basic > /dev/null'
     print("Command: {}".format(cmd))
     os.system(cmd)
     futstop = time.time()
@@ -182,7 +182,7 @@ def single_run(dkey, train_size, param, seed):
 
     print ("Trying to call futhark from python")
     futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver > pruneout.txt'
+    cmd = 'cat tmp_tree | ./treesolver > /dev/null'
     print("Command: {}".format(cmd))
     os.system(cmd)
     futstop = time.time()
@@ -190,7 +190,7 @@ def single_run(dkey, train_size, param, seed):
 
     print ("Trying to call futhark from python")
     futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
+    cmd = 'cat tmp_tree | ./treesolver_flat > /dev/null'
     print("Command: {}".format(cmd))
     os.system(cmd)
     futstop = time.time()
@@ -198,7 +198,7 @@ def single_run(dkey, train_size, param, seed):
 
     print ("Trying to call futhark from python")
     futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_superflat > superflatout.txt'
+    cmd = 'cat tmp_tree | ./treesolver_superflat > /dev/null'
     print("Command: {}".format(cmd))
     os.system(cmd)
     futstop = time.time()
@@ -206,7 +206,7 @@ def single_run(dkey, train_size, param, seed):
 
     print ("Trying to call futhark from python")
     futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_precompute > pre_out.txt'
+    cmd = 'cat tmp_tree | ./treesolver_precompute > /dev/null'
     print("Command: {}".format(cmd))
     os.system(cmd)
     futstop = time.time()
