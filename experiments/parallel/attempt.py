@@ -2,16 +2,16 @@
 # sys.path.append(".")
 
 import os
-import json
-from util import evaluate
+#import json
+#from util import evaluate
 import params
 
 import time
 
-from woody.models import HugeWoodClassifier, WoodClassifier
+from woody.models import WoodClassifier
 
-from woody.io import  MemoryStore, DiskStore
-from woody.util import ensure_dir_for_file
+#from woody.io import  MemoryStore, DiskStore
+
 from woody.data import *
 
 
@@ -38,8 +38,6 @@ def newfun(Xtest):
     data_values = {}
     query_values = []
     
-    amount_of_queries = n_queries
-    amount_of_features = n_features
 
     for header in data_headers:
         print header
@@ -69,13 +67,17 @@ def newfun(Xtest):
                     str(data_values["features"]),
                     str(data_values["thres_or_leaf"]),
                     str(query_values),
-                    amount_of_queries,
-                    amount_of_features,
+                    n_queries,
+                    n_features,
                     "empty(i32)",
                     0,
                     0,
                     nodes[len(nodes)-1][1]))
 
+def call_futhark(programname, output_preds_fname, dkey, train_size):
+    cmd = 'cat tmp_tree | ./{} -t measurements/{} -r 10 > measurements/{}.txt'.format(programname, "{}_{}_{}_times.txt".format(dkey, train_size, programname), "{}_{}_{}".format(dkey, train_size, output_preds_fname))
+    print("Command: {}".format(cmd))
+    os.system(cmd)
 
 def compare_predictions(cpu_pred, futhark_preds):
     print ("Length of woody preds: {}".format(len(cpu_pred)))
@@ -97,14 +99,32 @@ def compare_predictions(cpu_pred, futhark_preds):
     avg = 0 if (error == 0) else diff_sum/error
     print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, avg))
 
-def get_futhark_predictions(fname):
+def get_futhark_predictions(dkey, train_size, fname):
     futhark_preds = []
-    with open(fname) as file:
+    
+    with open(os.path.join("measurements", "{}_{}_{}".format(dkey, train_size, fname))) as file:
         for line in file.readlines():
             stripped = line.replace("[","").replace("i32","").replace(" ","").replace("]","").strip().split(",")
             futhark_preds.extend([float(i) for i in stripped])
     return futhark_preds
 
+def cpu_prediction(n, Xtest, model):
+    """
+    Summary: Calls predict_single_tree n times. 
+    Input:   
+            n:     Number of times to call predict
+            Xtest: Testdata to predict on
+            model: WoodClassifier object that has a fitted forest
+    Returns: list of execution times in microseconds"""
+    times = []
+    for i in range(n):
+        cpu_pred_start_time = time.time()
+        cpu_pred = super(WoodClassifier, model).predict_single_tree(Xtest)
+        cpu_pred_stop_time = time.time()
+        micro = int((cpu_pred_stop_time - cpu_pred_start_time) * 1000000)
+        times.append(micro)
+    return times
+        
 def single_run(dkey, train_size, param, seed):
 
     print("Processing data set %s with train_size %s, seed %s, and parameters %s ..." % (str(dkey), str(train_size), str(seed), str(param)))
@@ -142,28 +162,32 @@ def single_run(dkey, train_size, param, seed):
     # training
     model.fit(Xtrain, ytrain)
 
-# ==================================================
-# This would be a brilliant place to save the first tree
-# ==================================================
 
     ypreds_train = model.predict(Xtrain)
     # testing
-
     ypred_test = model.predict(Xtest)
-#    wrap = super(WoodClassifier, wood).get_wrapper()
 
     print("Calling predict_single_tree...")
-    cpu_pred_start_time = time.time()
-    cpu_pred = super(WoodClassifier, model).predict_single_tree(Xtest)
-    cpu_pred_stop_time = time.time()
-    print("After calling predict_single_tree...")
-    print("CPU Call took: %f" % (cpu_pred_stop_time - cpu_pred_start_time))
-    print("Type of cpu_pred: {}".format(type(cpu_pred)))
+    cpu_times = cpu_prediction(10, Xtest, model)
     
+    cpu_pred = super(WoodClassifier, model).predict_single_tree(Xtest)
+
+
+    
+    print("After calling predict_single_tree...\nTimes in microseconds:")
+    for t in cpu_times:
+        print(t)
+
+    # Save the cpu runtimes for use in report later
+    with open("measurements/{}_{}_cpu_times.txt".format(dkey, train_size), "w") as file:
+        for t in cpu_times:
+            file.write("{}\n".format(t))
+    # Save the predictions for comparisons
     print("Calling predict_single_tree again to save the predictions to file.")
     super(WoodClassifier, model).predict_single_tree_save_predictions(Xtest)
     print("Saving the first tree of the forest, so we can reload it in futhark")
     super(WoodClassifier, model).save_first_tree()
+
     time.sleep(1)
 
 
@@ -171,58 +195,14 @@ def single_run(dkey, train_size, param, seed):
     # This will read the tree from file,
     # restructure it for futhark and save as a new file called tmp_tree.  
     newfun(Xtest)
-    
-    print ("Trying to call futhark from python")
-    futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_basic > basicout.txt'
-    print("Command: {}".format(cmd))
-    os.system(cmd)
-    futstop = time.time()
-    print("Futhark call took: %f" % (futstop - futstart))
 
-    print ("Trying to call futhark from python")
-    futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver > pruneout.txt'
-    print("Command: {}".format(cmd))
-    os.system(cmd)
-    futstop = time.time()
-    print("Futhark call took: %f" % (futstop - futstart))
+    # Call futhark!
+    call_futhark("treesolver_basic", "basicout", dkey, train_size)
+    call_futhark("treesolver", "pruneout", dkey, train_size)
+    call_futhark("treesolver_flat", "flatout", dkey, train_size)
+    call_futhark("treesolver_superflat", "superflatout", dkey, train_size)
+    call_futhark("treesolver_precompute", "pre_out", dkey, train_size)
 
-    print ("Trying to call futhark from python")
-    futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
-    print("Command: {}".format(cmd))
-    os.system(cmd)
-    futstop = time.time()
-    print("Futhark call took: %f" % (futstop - futstart))
-
-    print ("Trying to call futhark from python")
-    futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_superflat > superflatout.txt'
-    print("Command: {}".format(cmd))
-    os.system(cmd)
-    futstop = time.time()
-    print("Futhark call took: %f" % (futstop - futstart))
-
-    print ("Trying to call futhark from python")
-    futstart = time.time()
-    cmd = 'cat tmp_tree | ./treesolver_precompute > pre_out.txt'
-    print("Command: {}".format(cmd))
-    os.system(cmd)
-    futstop = time.time()
-    print("Futhark call took: %f" % (futstop - futstart))
-
-
-    # sum = 0
-    # for i in range(10):
-    #     futstart = time.time()
-    #     cmd = 'cat tmp_tree | ./treesolver_flat > flatout.txt'
-    #     print("Command: {}".format(cmd))
-    #     os.system(cmd)
-    #     futstop = time.time()
-    #     sum += (futstop - futstart)
-    # avg = sum / 10.0
-    # print("Average of 10 calls: {}".format(avg))
 
 # ================================================================================
 # evaluation of correctness
@@ -230,44 +210,27 @@ def single_run(dkey, train_size, param, seed):
 
 
     print("Comparing basicout")
-    futpreds = get_futhark_predictions("basicout.txt")
+    futpreds = get_futhark_predictions(dkey, train_size, "basicout.txt")
     compare_predictions(cpu_pred, futpreds)
 
     print("Comparing flatout")
-    futpreds = get_futhark_predictions("flatout.txt")
+    futpreds = get_futhark_predictions(dkey, train_size, "flatout.txt")
     compare_predictions(cpu_pred, futpreds)
 
     print("Comparing pruneout")
-    futpreds = get_futhark_predictions("pruneout.txt")
+    futpreds = get_futhark_predictions(dkey, train_size, "pruneout.txt")
     compare_predictions(cpu_pred, futpreds)
 
     print("Comparing superflatout")
-    futpreds = get_futhark_predictions("superflatout.txt")
+    futpreds = get_futhark_predictions(dkey, train_size, "superflatout.txt")
     compare_predictions(cpu_pred, futpreds)
 
     print("Comparing pre_out")
-    futpreds = get_futhark_predictions("pre_out.txt")
+    futpreds = get_futhark_predictions(dkey, train_size, "pre_out.txt")
     compare_predictions(cpu_pred, futpreds)
 
-
-
-    # print ("Length of woody preds: {}".format(len(cpu_pred)))
-    # print ("Length of futhark preds: {}".format(len(futhark_preds)))
-
-    # correct = 0
-    # error = 0
-    # diff_sum = 0
-    # print ("First 10 entries of both:")
-    # print ("Futhark: {}".format(futhark_preds[:10]))
-    # print("Woody: {}".format(cpu_pred[:10]))
-    
-    # for i in range(min(len(cpu_pred), len(futhark_preds))):
-    #     if (cpu_pred[i] == futhark_preds[i]):
-    #         correct += 1
-    #     else:
-    #         error += 1
-    #         diff_sum += abs(cpu_pred[i]-futhark_preds[i])
-    # print ("Correct: {}\tErrors: {}\tAverage error: {}".format(correct, error, (diff_sum / error)))
+    # Delete the model after use
+    del(model)
     
             
 ###################################################################################
@@ -281,4 +244,4 @@ args = parser.parse_args()
 dkey, train_size, seed, key = args.dkey, args.train_size, args.seed, args.key
 ###################################################################################
 
-single_run(dkey, train_size, params.parameters[key], seed)#_hugewood[key], seed)
+single_run(dkey, train_size, params.parameters[key], seed)
